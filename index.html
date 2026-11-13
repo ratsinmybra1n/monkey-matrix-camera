@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monkey APP - Matrix Camera</title>
+    <title>Monkey APP - Video Chat</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { overflow: hidden; background-color: #000;
@@ -11,48 +11,42 @@
             height: 100vh; width: 100vw; }
         #matrix-canvas { position: fixed; top: 0; left: 0;
             width: 100%; height: 100%; z-index: 1; pointer-events: none; }
-        #camera-container { position: relative; z-index: 10;
+        #chat-window { position: relative; z-index: 10;
             width: 100vw; height: 100vh; display: flex;
             flex-direction: column; align-items: center; justify-content: center;
-            padding: 20px; gap: 20px; }
-        #camera-grid { display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-            gap: 20px; width: 100%; max-width: 1200px; }
-        .camera-card { background: rgba(0, 20, 0, 0.85);
-            border: 2px solid #0f0; border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.4);
-            overflow: hidden; display: flex; flex-direction: column;
-            transition: all 0.3s ease; }
-        .camera-card:hover { border-color: #0ff;
-            box-shadow: 0 0 30px rgba(0, 255, 255, 0.5); }
-        .camera-card h3 { padding: 10px 15px;
-            background: rgba(0, 40, 0, 0.9); border-bottom: 1px solid #0f0;
-            color: #0f0; font-size: 1rem; text-transform: uppercase;
-            letter-spacing: 2px; }
-        .camera-wrapper { position: relative; width: 100%;
-            aspect-ratio: 16/9; overflow: hidden; background: #000; }
-        .camera-wrapper video { width: 100%; height: 100%;
+            padding: 20px; gap: 15px; }
+        #video-embed { position: relative; width: 100%; max-width: 640px;
+            background: rgba(0, 20, 0, 0.9); border: 3px solid #0f0;
+            border-radius: 12px; overflow: hidden; box-shadow: 0 0 40px rgba(0,255,0,0.5);
+            aspect-ratio: 16/9; display: flex; align-items: center; justify-content: center; }
+        #video-embed video { width: 100%; height: 100%;
             object-fit: cover; transform: scaleX(-1); }
-        .camera-status { position: absolute; top: 10px; right: 10px;
-            padding: 5px 10px; background: rgba(0, 0, 0, 0.7);
-            border: 1px solid #0f0; color: #0f0; font-size: 0.75rem;
-            border-radius: 4px; animation: blink 1s infinite; }
+        #video-embed .empty-state { color: #0a0; font-size: 1.2rem;
+            text-align: center; padding: 40px; border: 2px dashed #0f0; }
+        #cam-status { position: absolute; top: 12px; right: 12px;
+            padding: 6px 14px; background: rgba(0,0,0,0.7);
+            border: 1px solid #0f0; color: #0f0; font-size: 0.8rem;
+            border-radius: 20px; animation: blink 1s infinite; }
+        #connect-info { position: absolute; top: 12px; left: 12px;
+            padding: 6px 14px; background: rgba(0,0,0,0.7);
+            border: 1px solid #0f0; color: #0f0; font-size: 0.8rem;
+            border-radius: 20px; }
         @keyframes blink { 0%, 50% { opacity: 1; }
             51%, 100% { opacity: 0.3; } }
-#controls-panel { position: fixed; bottom: 20px; left: 50%;
+#controls-panel { position: fixed; bottom: 30px; left: 50%;
     transform: translateX(-50%); z-index: 100;
     background: rgba(0, 30, 0, 0.95); border: 2px solid #0f0;
-    border-radius: 50px; padding: 15px 30px; display: flex; gap: 20px;
-    align-items: center; box-shadow: 0 0 30px rgba(0, 255, 0, 0.3);
-    backdrop-filter: blur(5px); }
+    border-radius: 50px; padding: 14px 32px; display: flex; gap: 16px;
+    align-items: center; box-shadow: 0 0 40px rgba(0,255,0,0.4);
+    backdrop-filter: blur(6px); }
     .control-btn { background: transparent; border: 1px solid #0f0;
-        color: #0f0; padding: 10px 20px;
+        color: #0f0; padding: 10px 22px;
         font-family: 'Courier New', Courier, monospace;
-        font-size: 0.9rem; cursor: pointer; border-radius: 5px;
+        font-size: 0.85rem; cursor: pointer; border-radius: 6px;
         transition: all 0.2s ease; text-transform: uppercase;
         letter-spacing: 1px; }
     .control-btn:hover { background: #0f0; color: #000;
-        box-shadow: 0 0 15px #0f0; }
+        box-shadow: 0 0 20px #0f0; }
     .control-btn:active { transform: scale(0.95); }
     .control-btn.active { background: #0f0; color: #000; }
     .control-btn.secondary { border-color: #0ff; color: #0ff; }
@@ -61,16 +55,16 @@
     .control-btn.danger:hover { background: #f00; color: #000; }
 #status-indicator { position: fixed; top: 20px; left: 20px; z-index: 100;
     background: rgba(0, 30, 0, 0.9); border: 1px solid #0f0;
-    padding: 10px 15px; border-radius: 5px; font-size: 0.85rem;
-    display: flex; align-items: center; gap: 8px; }
-    .status-dot { width: 8px; height: 8px; background: #0f0;
+    padding: 10px 16px; border-radius: 6px; font-size: 0.85rem;
+    display: flex; align-items: center; gap: 10px; }
+    .status-dot { width: 10px; height: 10px; background: #0f0;
         border-radius: 50%; animation: blink 1s infinite;
-        box-shadow: 0 0 10px #0f0; }
+        box-shadow: 0 0 12px #0f0; }
 #header { position: fixed; top: 20px; right: 20px; z-index: 100;
     text-align: right; }
-    #header h1 { color: #0f0; font-size: 1.5rem;
+    #header h1 { color: #0f0; font-size: 1.4rem;
         text-transform: uppercase; letter-spacing: 3px;
-        text-shadow: 0 0 10px #0f0; margin-bottom: 5px; }
+        text-shadow: 0 0 12px #0f0; margin-bottom: 6px; }
     #header p { color: #0a0; font-size: 0.8rem; letter-spacing: 1px; }
 #scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     z-index: 5; pointer-events: none;
@@ -80,20 +74,20 @@
     background-size: 100% 4px; }
 #vignette { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
     z-index: 5; pointer-events: none;
-    background: radial-gradient(circle, transparent 60%, rgba(0, 0, 0, 0.8) 100%); }
+    background: radial-gradient(circle, transparent 60%, rgba(0,0,0,0.8) 100%); }
 @keyframes crt-flicker { 0% { opacity: 0.97; }
     50% { opacity: 1; } 100% { opacity: 0.98; } }
 #crt-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-    z-index: 6; background: rgba(0, 0, 0, 0.1);
+    z-index: 6; background: rgba(0,0,0,0.1);
     animation: crt-flicker 0.15s infinite; pointer-events: none; }
 @media (max-width: 768px) {
-    #camera-grid { grid-template-columns: 1fr; max-width: 400px; }
-    #controls-panel { bottom: 10px; padding: 10px 20px; gap: 10px; }
-    .control-btn { padding: 8px 15px; font-size: 0.8rem; }
+    #video-embed { max-width: 100%; }
+    #controls-panel { bottom: 15px; padding: 10px 20px; gap: 10px; }
+    .control-btn { padding: 8px 16px; font-size: 0.8rem; }
     #header { top: 10px; right: 10px; }
-    #header h1 { font-size: 1.2rem; }
+    #header h1 { font-size: 1.1rem; }
 }
-</style>
+    </style>
 </head>
 <body>
 
@@ -104,23 +98,27 @@
 
     <div id="header">
         <h1>Monkey APP</h1>
-        <p>Matrix Camera Interface</p>
+        <p>Video Chat Connect</p>
     </div>
 
     <div id="status-indicator">
         <div class="status-dot"></div>
-        <span id="status-text">System Ready</span>
+        <span id="status-text">Disconnected</span>
     </div>
 
-    <div id="camera-container">
-        <div id="camera-grid"></div>
+    <div id="chat-window">
+        <div id="video-embed">
+            <div id="cam-status">CAM OFF</div>
+            <div id="connect-info">DISCONNECTED</div>
+            <div class="empty-state">Connect to start video chat</div>
+            <video id="chat-video" autoplay playsinline muted></video>
+        </div>
     </div>
 
     <div id="controls-panel">
-        <button class="control-btn" id="btn-add-camera" onclick="addCamera()">Add Camera</button>
-        <button class="control-btn secondary" id="btn-toggle-matrix" onclick="toggleMatrix()">Matrix: ON</button>
-        <button class="control-btn danger" id="btn-stop-all" onclick="stopAllCameras()">Stop All</button>
-        <button class="control-btn" id="btn-screenshot" onclick="takeScreenshot()">Screenshot</button>
+        <button class="control-btn danger" id="btn-connect" onclick="toggleConnect()">Connect</button>
+        <button class="control-btn secondary" id="btn-switch-cam" onclick="switchCamera()" disabled>Switch Camera</button>
+        <button class="control-btn" id="btn-matrix" onclick="toggleMatrix()">Matrix: ON</button>
     </div>
 
     <script>
@@ -158,98 +156,111 @@
 
         function toggleMatrix() {
             matrixActive = !matrixActive;
-            const btn = document.getElementById('btn-toggle-matrix');
+            const btn = document.getElementById('btn-matrix');
             if (matrixActive) { btn.textContent = 'Matrix: ON'; btn.classList.remove('danger'); btn.classList.add('secondary'); }
             else { ctx.clearRect(0, 0, canvasWidth, canvasHeight); btn.textContent = 'Matrix: OFF'; btn.classList.remove('secondary'); btn.classList.add('danger'); }
         }
 
-        // ==================== CAMERA FUNCTIONALITY ====================
-        let cameras = [], nextCameraId = 1;
+        // ==================== VIDEO CHAT CONNECT ====================
+        let stream = null;
+        let isConnected = false;
+        let facingMode = 'environment';
 
-        async function initCamera(cardElement, videoElement, id) {
+        const video = document.getElementById('chat-video');
+        const camStatus = document.getElementById('cam-status');
+        const connectInfo = document.getElementById('connect-info');
+        const statusText = document.getElementById('status-text');
+        const statusDot = document.querySelector('.status-dot');
+        const btnConnect = document.getElementById('btn-connect');
+        const btnSwitch = document.getElementById('btn-switch-cam');
+        const emptyState = document.querySelector('.empty-state');
+
+        function updateUI(connected, camOn) {
+            isConnected = connected;
+            if (connected) {
+                btnConnect.textContent = 'Disconnect';
+                btnConnect.classList.remove('danger');
+                btnConnect.classList.add('secondary');
+                btnSwitch.disabled = false;
+                connectInfo.textContent = 'CONNECTED';
+                connectInfo.style.color = '#0f0';
+                statusText.textContent = 'Connected';
+                statusDot.style.background = '#0f0';
+                statusDot.style.boxShadow = '0 0 12px #0f0';
+                emptyState.style.display = 'none';
+                video.style.display = 'block';
+                camStatus.textContent = camOn ? 'CAM LIVE' : 'CAM OFF';
+                camStatus.style.color = camOn ? '#0f0' : '#f00';
+            } else {
+                btnConnect.textContent = 'Connect';
+                btnConnect.classList.remove('secondary');
+                btnConnect.classList.add('danger');
+                btnSwitch.disabled = true;
+                connectInfo.textContent = 'DISCONNECTED';
+                connectInfo.style.color = '#f00';
+                statusText.textContent = 'Disconnected';
+                statusDot.style.background = '#f00';
+                statusDot.style.boxShadow = '0 0 12px #f00';
+                emptyState.style.display = 'block';
+                video.style.display = 'none';
+                camStatus.textContent = 'CAM OFF';
+                camStatus.style.color = '#f00';
+            }
+        }
+
+        async function toggleConnect() {
+            if (isConnected) {
+                disconnect();
+            } else {
+                await connect();
+            }
+        }
+
+        async function connect() {
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({
-                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'environment' }
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: facingMode }
                 });
-                videoElement.srcObject = stream;
-                cameras[id - 1] = { stream, id, active: true };
-                const statusElem = cardElement.querySelector('.camera-status');
-                statusElem.textContent = 'LIVE'; statusElem.style.color = '#0f0';
-                updateStatusText('Camera ' + id + ' active');
+                video.srcObject = stream;
+                updateUI(true, true);
             } catch (err) {
-                console.error('Error accessing camera:', err);
-                const statusElem = cardElement.querySelector('.camera-status');
-                statusElem.textContent = 'ERROR'; statusElem.style.color = '#f00';
-                updateStatusText('Camera ' + id + ' error: ' + err.message, true);
+                console.error('Camera error:', err);
+                statusText.textContent = 'Camera access denied';
+                statusDot.style.background = '#f00';
+                statusDot.style.boxShadow = '0 0 12px #f00';
             }
         }
 
-        function createCameraCard(id) {
-            const card = document.createElement('div');
-            card.className = 'camera-card'; card.id = 'camera-card-' + id;
-            card.innerHTML = '<h3>CAM-' + id.toString().padStart(2, '0') + '</h3>' +
-                '<div class="camera-wrapper">' +
-                '<video id="video-' + id + '" autoplay playsinline muted></video>' +
-                '<div class="camera-status" id="status-' + id + '">INIT</div>' +
-                '</div>';
-            return card;
-        }
-
-        async function addCamera() {
-            if (cameras.length >= 6) { updateStatusText('Maximum cameras reached (6)', true); return; }
-            const id = nextCameraId++;
-            const cameraGrid = document.getElementById('camera-grid');
-            const card = createCameraCard(id);
-            cameraGrid.appendChild(card);
-            const video = document.getElementById('video-' + id);
-            await initCamera(card, video, id);
-            updateStatusText('Added camera ' + id);
-        }
-
-        async function stopAllCameras() {
-            cameras.forEach(function(cam) {
-                if (cam.stream) { cam.stream.getTracks().forEach(function(track) { track.stop(); }); }
-                const video = document.getElementById('video-' + cam.id);
-                if (video) { video.srcObject = null; }
-                const statusElem = document.getElementById('status-' + cam.id);
-                if (statusElem) { statusElem.textContent = 'OFF'; statusElem.style.color = '#f00'; }
-            });
-            cameras = []; document.getElementById('camera-grid').innerHTML = ''; nextCameraId = 1;
-            updateStatusText('All cameras stopped');
-        }
-
-        async function takeScreenshot() {
-            const activeCams = cameras.filter(function(c) { return c.active; });
-            if (activeCams.length === 0) { updateStatusText('No active cameras to capture', true); return; }
-            activeCams.forEach(function(cam) {
-                const video = document.getElementById('video-' + cam.id);
-                const canvas = document.createElement('canvas');
-                canvas.width = video.videoWidth || 640; canvas.height = video.videoHeight || 480;
-                const ctx = canvas.getContext('2d'); ctx.drawImage(video, 0, 0);
-                const link = document.createElement('a');
-                link.download = 'monkey-camera-' + cam.id + '-' + Date.now() + '.png';
-                link.href = canvas.toDataURL('image/png'); link.click();
-            });
-            updateStatusText('Captured ' + activeCams.length + ' screenshot(s)');
-        }
-
-        function updateStatusText(text, isError) {
-            const statusText = document.getElementById('status-text');
-            const statusDot = document.querySelector('.status-dot');
-            statusText.textContent = text;
-            if (isError) { statusDot.style.background = '#f00'; statusDot.style.boxShadow = '0 0 10px #f00'; }
-            else { statusDot.style.background = '#0f0'; statusDot.style.boxShadow = '0 0 10px #0f0'; }
-        }
-
-        window.addEventListener('DOMContentLoaded', async function() {
-            updateStatusText('Initializing...');
-            try { await addCamera(); } catch (err) {
-                updateStatusText('Camera access denied - click Add Camera to retry', true);
+        function disconnect() {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+                stream = null;
             }
-        });
+            video.srcObject = null;
+            updateUI(false, false);
+        }
+
+        async function switchCamera() {
+            if (!stream) return;
+            facingMode = facingMode === 'environment' ? 'user' : 'environment';
+            const tracks = stream.getVideoTracks();
+            tracks.forEach(track => track.stop());
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: facingMode }
+                });
+                video.srcObject = stream;
+            } catch (err) {
+                console.error('Switch camera error:', err);
+            }
+        }
 
         document.addEventListener('visibilitychange', function() {
             matrixActive = !document.hidden;
+        });
+
+        window.addEventListener('DOMContentLoaded', function() {
+            updateUI(false, false);
         });
     </script>
 </body>
